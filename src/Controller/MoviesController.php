@@ -46,13 +46,13 @@ class MoviesController extends AbstractController
     {
         $movie = new Movie();
         $form = $this->createForm(MovieFormType::class, $movie);
-
+        
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
             $newMovie = $form->getData();
             $imagePath = $form->get('imagePath')->getData();
-
+            
             if ($imagePath) {
                 $newFileName = uniqid() . '.' . $imagePath->guessExtension();
 
@@ -64,7 +64,6 @@ class MoviesController extends AbstractController
                 } catch (FileException $e) {
                     return new Response($e->getMessage());
                 }
-
                 $newMovie->setImagePath('/uploads/' . $newFileName);
             }
 
@@ -81,9 +80,10 @@ class MoviesController extends AbstractController
 
 
     #[Route('/movies/edit/{id}', name: 'edit_movie')]
-    public function edit($id, Request $request): Response
+    public function edit($id, Request $request): Response 
     {
         $movie = $this->movieRepository->find($id);
+
         $form = $this->createForm(MovieFormType::class, $movie);
 
         $form->handleRequest($request);
@@ -96,32 +96,30 @@ class MoviesController extends AbstractController
                         $this->getParameter('kernel.project_dir') . $movie->getImagePath()
                         )) {
                             $this->GetParameter('kernel.project_dir') . $movie->getImagePath();
-
-                            $newFileName = uniqid() . '.' .$imagePath->guessExtension();
-
-                            try {
-                                $imagePath->move(
-                                    $this->getParameter('kernel.project_dir') . '/public/uploads',
-                                    $newFileName
-                                );
-                            } catch (FileException $e) {
-                                return new Response($e->getMessage());
-                            }
-
-                            $movie->setImagePath('/uploads/' . $newFileName);
-
-                            $this->em->flush();
-                            return $this->redirectToRoute('app_movies');
                     }
-                }   
+                    $newFileName = uniqid() . '.' . $imagePath->guessExtension();
 
+                    try {
+                        $imagePath->move(
+                            $this->getParameter('kernel.project_dir') . '/public/uploads',
+                            $newFileName
+                        );
+                    } catch (FileException $e) {
+                        return new Response($e->getMessage());
+                    }
+
+                    $movie->setImagePath('/uploads/' . $newFileName);
+                    $this->em->flush();
+
+                    return $this->redirectToRoute('app_movies');
+                }
             } else {
                 $movie->setTitle($form->get('title')->getData());
                 $movie->setReleaseYear($form->get('releaseYear')->getData());
                 $movie->setDescription($form->get('description')->getData());
 
                 $this->em->flush();
-                  return $this->redirectToRoute('app_movies');
+                return $this->redirectToRoute('app_movies');
             }
         }
 
@@ -129,6 +127,16 @@ class MoviesController extends AbstractController
             'movie' => $movie,
             'form' => $form->createView()
         ]);
+    }
+
+    #[Route('/movies/delete/{id}', methods: ['GET', 'DELETE'], name: 'delete_movie')]
+    public function delete($id): Response
+    {
+        $movie = $this->movieRepository->find($id);
+        $this->em->remove($movie);
+
+        $this->em->flush();
+        return $this->redirectToRoute('app_movies');
     }
 
 
